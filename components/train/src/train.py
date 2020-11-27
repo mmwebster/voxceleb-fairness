@@ -133,8 +133,8 @@ if args.set_seed:
 print(f"train: Creating directory {args.save_tmp_wandb_to}")
 Path(args.save_tmp_wandb_to).mkdir(parents=True, exist_ok=True)
 
-wandb.init(project="voxsrc-2020-v1", config=args, id=args.run_id,
-        resume="allow", dir=args.save_tmp_wandb_to)
+wandb.init(project="initial-setup", entity="voxceleb-fairness", config=args,
+        id=args.run_id, resume="allow", dir=args.save_tmp_wandb_to)
 
 train_list, test_list, train_path, test_path = [None, None,
         None, None]

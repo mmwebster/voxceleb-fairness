@@ -21,7 +21,7 @@
 #         --train_path=voxceleb2-small-m4a.tar.gz
 
 # set common source dir (build_image.sh does something similar)
-export VOX_COMMON_SRC_DIR="../../common/src/"
+export VOX_COMMON_SRC_DIR="../../common/"
 
 # full data with params catered to milo's local hardware
 while ! python3 src/train.py \

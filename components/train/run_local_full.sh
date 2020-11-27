@@ -21,14 +21,14 @@
 #         --train_path=voxceleb2-small-m4a.tar.gz
 
 # set common source dir (build_image.sh does something similar)
-export VOX_COMMON_SRC_DIR="../../common/src/"
+export VOX_COMMON_SRC_DIR="../../common/"
 
 # full data catered to milo's local hardware
 while ! python3 src/train.py \
   --data-bucket=voxsrc-2020-voxceleb-v4 \
   --test_list=vox1_full.txt --train_list=vox2_full.txt \
   --test_path=vox1_full_feats.tar.gz --train_path=vox2_full_feats.tar.gz \
-  --batch_size=650 --nSpeakers=2 --max_epoch=500 --test_interval=10 \
+  --batch_size=400 --nSpeakers=2 --max_epoch=500 --test_interval=10 \
   --n-data-loader-thread=5 \
   $@
 do
