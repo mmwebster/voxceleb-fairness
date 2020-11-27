@@ -47,7 +47,7 @@ class SpeakerNet(nn.Module):
             self.__test_normalize__     = True
         elif trainfunc == 'aamsoftmax':
             print(f"\n\n\n**********************AAMSOFTAMX")
-            self.__L__ = AAMSoftmax(self.device, in_feats=nOut, n_classes=nSpeakers, m=margin, s=scale).to(self.device)
+            self.__L__ = AAMSoftmax(in_feats=nOut, n_classes=nSpeakers, m=margin, s=scale).to(self.device)
             self.__train_normalize__    = False
             self.__test_normalize__     = True
         elif trainfunc == 'softmax':

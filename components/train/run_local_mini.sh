@@ -27,6 +27,6 @@ python3 src/train.py \
   --data-bucket=voxsrc-2020-voxceleb-v4 \
   --test_list=vox1_full.txt --train_list=vox2_full.txt \
   --test_path=vox1_full_feats.tar.gz --train_path=vox2_full_feats.tar.gz \
-  --batch_size=400 --max_epoch=500 --test_interval=1 \
+  --batch_size=2000 --max_epoch=500 --test_interval=1 \
   --n-data-loader-thread=5 --trainfunc=aamsoftmax --model=ResNetSE34L_mini \
   $@
