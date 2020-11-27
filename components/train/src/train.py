@@ -51,10 +51,13 @@ parser.add_argument('--save-tmp-data-to', type=str, default="./tmp/data/")
 parser.add_argument('--skip-data-fetch', action='store_true')
 parser.add_argument('--reset-training', action='store_true', help='Reset \
         training to first epoch, regardless of previously saved model checkpoints')
-parser.add_argument('--save-tmp-model-to', type=str, default="./tmp/model/");
-parser.add_argument('--save-tmp-results-to', type=str, default="./tmp/results/");
-parser.add_argument('--save-tmp-feats-to', type=str, default="./tmp/feats/");
-parser.add_argument('--save-tmp-wandb-to', type=str, default="./tmp/");
+parser.add_argument('--save-tmp-model-to', type=str, default="./model/");
+parser.add_argument('--save-tmp-results-to', type=str, default="./results/");
+parser.add_argument('--save-tmp-feats-to', type=str, default="./feats/");
+parser.add_argument('--save-tmp-wandb-to', type=str, default="./");
+
+# permanent/component outputs
+parser.add_argument('--save-model-to', type=str, default="./out/model.txt")
 
 parser.add_argument('--set-seed', action='store_true')
 parser.add_argument('--no-cuda', action='store_true', help="Flag to disable cuda for this run")
@@ -67,9 +70,6 @@ parser.add_argument('--run-id', type=str, default=f"{gen_run_id()}");
 parser.add_argument('--gaussian-noise-std', type=float, default=.9,
         help="Standard deviation of gaussian noise used to augment utterance "
              "spectrogram training data");
-
-# permanent/component outputs
-parser.add_argument('--save-model-to', type=str, default="./out/model.txt")
 
 ## Data loader
 parser.add_argument('--max_frames', type=int, default=200,  help='Input length to the network');
@@ -120,6 +120,13 @@ parser.add_argument('--nOut', type=int,         default=512,    help='Embedding 
 
 args = parser.parse_args();
 
+# prepend run dir to all save paths
+save_prefix = os.path.join("./run_data", args.run_id)
+args.save_tmp_model_to = os.path.join(save_prefix, args.save_tmp_model_to)
+args.save_tmp_results_to = os.path.join(save_prefix, args.save_tmp_results_to)
+args.save_tmp_feats_to = os.path.join(save_prefix, args.save_tmp_feats_to)
+args.save_tmp_wandb_to = os.path.join(save_prefix, args.save_tmp_wandb_to)
+
 # set random seeds
 # @TODO any reason to use BOTH 'random' and 'numpy.random'?
 if args.set_seed:
@@ -139,18 +146,11 @@ wandb.init(project="initial-setup", entity="voxceleb-fairness", config=args,
 train_list, test_list, train_path, test_path = [None, None,
         None, None]
 
-# make directories for tmp data
+# make directories for run data
 if not(os.path.exists(args.save_tmp_data_to)):
     os.makedirs(args.save_tmp_data_to)
 if not(os.path.exists(args.save_tmp_model_to)):
     os.makedirs(args.save_tmp_model_to)
-
-# Install data from GCS, skipping download if already downladed, and skipping
-# extraction if already downloaded and extracted
-print("train: Installing dataset from GCS")
-# @TODO mimic the --install-local-dataset function in
-#       data/utils.py, using the newer functions that it invokes
-#       in common/src/utils/data_utils.py
 
 # download, extract, transcode (compressed AAC->WAV) dataset
 blobs = [args.train_list, args.test_list, args.train_path,
@@ -197,54 +197,33 @@ metadata_file_dst_path = os.path.join(args.save_tmp_model_to, METADATA_NAME)
 default_metadata = {'is_done': False, 'val_EER': 0}
 metadata = default_metadata
 
-def save_model_kf_output_artifact(model, epoch, dst):
-    final_model_name = "model%09d.model"%epoch
-    Path(dst).mkdir(parents=True, exist_ok=True)
-    final_model_filename = os.path.join(dst, final_model_name)
-    print(f"train: Saving KF output artifact {final_model_name} to {dst}")
-    model.saveParameters(final_model_filename);
-
-# fetch metadata and latest model, if available
+# load metadata and latest model, if available
+# @TODO 1) save models and metadata under the run id
+#       2) try to load metadata and latest model under run id
 try:
-    download_blob(args.checkpoint_bucket, metadata_gcs_src_path,
-            metadata_file_dst_path)
-    print("train: Downloaded previous training metadata")
+    print("train: Trying to continue previous run")
     with open(metadata_file_dst_path, 'r') as f:
         try:
             metadata = yaml.safe_load(f)
             print(f"train: Loaded previous training metadata: {metadata}")
             # grab the latest model name (corresponding to the last epoch)
             latest_model_name = metadata['latest_model_name']
-            # download the model
-            model_gcs_src_path = os.path.join(args.run_id, latest_model_name)
-            model_file_dst_path = os.path.join(args.save_tmp_model_to, latest_model_name)
-            try:
-                download_blob(args.checkpoint_bucket, model_gcs_src_path,
-                        model_file_dst_path)
-                print("train: Downloaded a saved model")
-                # load the saved model's params into the model class
-                s.loadParameters(model_file_dst_path);
-                print(f"train: Loaded model params from path {model_file_dst_path}");
-                it = int(os.path.splitext(os.path.basename(model_file_dst_path))[0][5:]) + 1
-            except google.cloud.exceptions.NotFound:
-                print("train: No saved model found")
+            # load the model
+            model_file_src_path = os.path.join(args.save_tmp_model_to, latest_model_name)
+            s.loadParameters(model_file_src_path);
+            print(f"train: Loaded pre-trained model from path {model_file_src_path}");
+            # init the epoch count
+            it = int(os.path.splitext(os.path.basename(model_file_src_path))[0][5:]) + 1
         except yaml.YAMLError as exc:
             print(exc)
             metadata = default_metadata
-except google.cloud.exceptions.NotFound:
-    print("train: No previous training metadata found**")
+except FileNotFoundError:
+    print("train: No previous run found... starting a new one")
 
 # exit if previous training run finished
 if 'is_done' in metadata and metadata['is_done']:
-    save_model_kf_output_artifact(s, metadata['num_epochs'],
-                                  args.save_model_to)
     print("train: Terminating... training for this run has already completed")
     quit()
-
-if(args.initial_model != ""):
-    raise "Error: TODO"
-    s.loadParameters(args.initial_model);
-    print(f"train: Loaded model params from path {args.initial_model}");
 
 for ii in range(0,it-1):
     if ii % args.lr_decay_interval == 0:
@@ -333,16 +312,6 @@ for epoch in range(it, args.max_epoch):
             print("Saved current training metadata")
         except yaml.YAMLError as exc:
             print(exc)
-    # upload model to GCS
-    model_gcs_dst_path = os.path.join(args.run_id, model_name)
-    model_file_src_path = os.path.join(args.save_tmp_model_to, model_name)
-    upload_blob(args.checkpoint_bucket, model_gcs_dst_path,
-            model_file_src_path)
-    # upload metadata to GCS
-    metadata_gcs_dst_path = metadata_gcs_src_path
-    metadata_file_src_path = metadata_file_dst_path
-    upload_blob(args.checkpoint_bucket, metadata_gcs_dst_path,
-            metadata_file_src_path)
 
     # update learning rate
     if epoch % args.lr_decay_interval == 0:
@@ -358,13 +327,3 @@ with open(metadata_file_dst_path, 'w') as f:
         print("Saved current training metadata")
     except yaml.YAMLError as exc:
         print(exc)
-
-# upload metadata to GCS
-metadata_gcs_dst_path = metadata_gcs_src_path
-metadata_file_src_path = metadata_file_dst_path
-upload_blob(args.checkpoint_bucket, metadata_gcs_dst_path,
-        metadata_file_src_path)
-
-# write the final model as a kubeflow output artifact
-save_model_kf_output_artifact(s, metadata['num_epochs'],
-                              args.save_model_to)

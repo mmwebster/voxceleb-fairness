@@ -14,6 +14,10 @@ import time, os, itertools, shutil, importlib
 from IterableEvalDataset import IterableEvalDataset
 from baseline_misc.tuneThreshold import tuneThresholdfromScore
 
+from loss.angleproto import AngleProtoLoss
+from loss.arcface import AAMSoftmax
+from loss.softmax import SoftmaxLoss
+
 class SpeakerNet(nn.Module):
 
     def __init__(self, device, max_frames, batch_size, eval_batch_size,
@@ -36,10 +40,26 @@ class SpeakerNet(nn.Module):
         # set model as __S__ member
         self.__S__ = SpeakerNetModel(**argsdict).to(self.device);
 
-        # remove variable loss from baseline, only using angular prototypical loss
-        self.__L__ = AngleProtoLoss(self.device).to(self.device)
-        self.__train_normalize__    = True
-        self.__test_normalize__     = True
+        # instantiate loss from args
+        if trainfunc == 'angleproto':
+            self.__L__ = AngleProtoLoss(self.device).to(self.device)
+            self.__train_normalize__    = True
+            self.__test_normalize__     = True
+        elif trainfunc == 'aamsoftmax':
+            print(f"\n\n\n**********************AAMSOFTAMX")
+            self.__L__ = AAMSoftmax(self.device, in_feats=nOut, n_classes=nSpeakers, m=margin, s=scale).to(self.device)
+            self.__train_normalize__    = False
+            self.__test_normalize__     = True
+        elif trainfunc == 'softmax':
+            self.__L__ = SoftmaxLoss(in_feats=nOut, n_classes=nSpeakers).to(self.device)
+            self.__train_normalize__    = False
+            self.__test_normalize__     = True
+        else:
+            raise ValueError('Undefined loss.')
+
+        #self.__L__ = AngleProtoLoss(self.device).to(self.device)
+        #self.__train_normalize__    = True
+        #self.__test_normalize__     = True
 
         if optimizer == 'adam':
             self.__optimizer__ = torch.optim.Adam(self.parameters(), lr = lr);
@@ -275,7 +295,7 @@ class SpeakerNet(nn.Module):
     ## ===== ===== ===== ===== ===== ===== ===== =====
 
     def loadParameters(self, path):
-
+        print(f"Loading model from path {path}")
         self_state = self.state_dict();
         loaded_state = torch.load(path);
         for name, param in loaded_state.items():

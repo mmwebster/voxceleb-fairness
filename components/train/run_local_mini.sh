@@ -23,15 +23,10 @@
 # set common source dir (build_image.sh does something similar)
 export VOX_COMMON_SRC_DIR="../../common/"
 
-# full data with params catered to milo's local hardware
-while ! python3 src/train.py \
+python3 src/train.py \
   --data-bucket=voxsrc-2020-voxceleb-v4 \
   --test_list=vox1_full.txt --train_list=vox2_full.txt \
   --test_path=vox1_full_feats.tar.gz --train_path=vox2_full_feats.tar.gz \
-  --batch_size=650 --nSpeakers=2 --max_epoch=500 --test_interval=2 \
-  --n-data-loader-thread=5 --model=ResNetSE34L_mini\
+  --batch_size=400 --max_epoch=500 --test_interval=1 \
+  --n-data-loader-thread=5 --trainfunc=aamsoftmax --model=ResNetSE34L_mini \
   $@
-do
-  sleep 1
-  echo "exited with non-zero status. restarting..."
-done

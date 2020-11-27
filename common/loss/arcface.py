@@ -47,7 +47,11 @@ class AAMSoftmax(nn.Module):
         if self.easy_margin:
             phi = torch.where(cosine > 0, phi, cosine)
         else:
-            phi = torch.where((cosine - self.th) > 0, phi, cosine - self.mm)
+            cosine = cosine.float()
+            th = float(self.th)
+            mm = float(self.mm)
+            phi = phi.float()
+            phi = torch.where((cosine - th) > 0, phi, cosine - mm)
 
         #one_hot = torch.zeros(cosine.size(), device='cuda' if torch.cuda.is_available() else 'cpu')
         one_hot = torch.zeros_like(cosine)
