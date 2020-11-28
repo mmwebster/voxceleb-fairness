@@ -1,6 +1,7 @@
 tmp
 out
-data/datasets
+data/datasets/*
+!data/datasets/no_cuda
 data/tars
 *.tar.gz
 __pycache__

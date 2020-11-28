@@ -1,0 +1,16 @@
+data_bucket: voxsrc-2020-voxceleb-v4
+save_tmp_data_to: ./tmp/data/
+no_cuda: True
+set_seed: False
+no_upload: False
+output_path_test_feats_tar_path: ./tmp/outputs/test_feats_tar_path
+output_path_train_feats_tar_path: ./tmp/outputs/train_feats_tar_path
+num_threads: 10
+reuse_run_with_id: 
+run_id: milo_webster-wvnct30c
+train_list: vox2_no_cuda.txt
+test_utterances_list: vox1_no_cuda_utterances.txt
+train_path: vox2_no_cuda.tar.gz
+test_path: vox1_no_cuda.tar.gz
+Git commit: e144e94d77b10fd1e9e5638944945b3d033e6d90
+Git status: dirty
