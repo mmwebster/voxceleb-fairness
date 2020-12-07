@@ -1,6 +1,7 @@
 tmp
 out
 data/datasets/*
+data/lists/*
 !data/datasets/no_cuda
 data/tars
 *.tar.gz
