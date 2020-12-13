@@ -45,7 +45,7 @@ parser.add_argument('--batch_size', type=int, default=200,  help='Batch size');
 parser.add_argument('--eval_batch_size', type=int, default=85,  help='Batch size for loading validation data for model eval');
 # ^^^ use --batch_size=30 for small datasets that can't fill an entire 200 speaker pair/triplet batch
 parser.add_argument('--max_seg_per_spk', type=int, default=100, help='Maximum number of utterances per speaker per epoch');
-parser.add_argument('--n-data-loader-thread', type=int, default=7, help='Number of loader threads');
+parser.add_argument('--n-data-loader-thread', type=int, default=16, help='Number of loader threads');
 
 ## Training details
 # @TODO disentangle learning rate decay from validation
@@ -113,7 +113,7 @@ s = SpeakerNet(device, **vars(args));
 s.loadParameters("/home/jupyter/model000000029.model")
 
 spectrogram_feats_path = "/home/jupyter/voxceleb-fairness/data/datasets/full/vox1_full_feats_milo_webster-19rvuxfu"
-list_files_base_path = "/home/jupyter/voxceleb-fairness/data/lists/intersect/"
+list_files_base_path = "/home/jupyter/voxceleb-fairness/data/lists/intersect/gender-native-lang/"
 
 # full paths to test lists
 balanced_test_list_paths = glob.glob(os.path.join(list_files_base_path, "*balanced.txt"))
@@ -156,6 +156,6 @@ for i, data in enumerate(fpr_tpr_and_thresholds):
     results[name + "_thresholds"] = data[2].tolist()
     
 # save the data as json
-dest_file_path = '/home/jupyter/voxceleb-fairness/data/roc/roc_intersect.json'
+dest_file_path = '/home/jupyter/voxceleb-fairness/data/roc/roc_intersect_gender_native_lang_full.json'
 with open(dest_file_path, 'w') as fp:
     json.dump(results, fp)
